@@ -1,81 +1,69 @@
 from flask import request, current_app, jsonify
 
-from app.services.helper_service import verify_required_key, verify_missing_key
+from app.services.helper_service import verify_required_key, verify_missing_key, verify_value_option
+
+from app.services.eisenhower_service import verify_eisenhower
 
 from app.models.tasks_model import TasksModel
 from app.exc.missing_key import MissingKeyError
 from app.exc.required_key import RequiredKeyError
+from app.exc.different_value import InvalidOptionError
+
+from app.models.eisenhowers_model import EisenhowerModel
+
 
 def verify_values():
     
-    required_key = ["name", "description", "duration", "importance", "urgency"]
+    required_keys = ["name", "description", "duration", "importance", "urgency"]
+
+    value_options = [1, 2]
 
     session = current_app.db.session
 
-    """
-    O usuário insere o JSON:
-    {
-        "name": "Lavar roupa",
-        "description": "",
-        "duration": 100,
-        "importance": 2,
-        "urgency": 1
-    }
-    """
     data = request.get_json()
 
-    # Verificação entre as chaves inseridas com as chaves corretas
-    if verify_missing_key(data, required_key):
-        raise MissingKeyError(data, required_key)
+    importance = data["importance"]
+    urgency = data["urgency"]
 
-    if verify_required_key(data, required_key):
-        raise RequiredKeyError(data, required_key)
 
-    # Preenche a tabela mas é preciso fazer agora?
-    tasks = TasksModel(**data)
+    if verify_missing_key(data, required_keys):
+        raise MissingKeyError(data, required_keys)
 
-    # Pega os valores das chaves de "importance" e "urgency"
-    importance = TasksModel.importance.values()
-    urgency = TasksModel.urgency.values()
+    if verify_required_key(data, required_keys):
+        raise RequiredKeyError(data, required_keys)
 
-    """
-    Faz as verificações entre os valores de "importance" e "urgency"
+    if not verify_value_option(data, value_options):
+        raise InvalidOptionError(importance, urgency, value_options)
 
-    Caso o valor seja menor que 1 ou maior que 2 retornar o erro:
 
-    if (data["importance"].values() < 1 or data["importance"].values() > 2) or (data["urgency"].values() < 1 or data["urgency"].values() > 2):
+    verify_eisenhower()
 
-    {
-        "error": {
-            "valid options": {
-                "importance": [1, 2],
-                "urgency": [1,2]
-            },
-            "recieved options": {
-                "importance": data.values(),
-                "urgency": data.values()
-            }
-        }
-    }
 
-    Como puxar o valor correspondente na tabela Eisenhower?
-
-    Como preencher a tabela?
-
-    Como retornar 3 dados inseridos e transformar "importance" e "urgency" em "eisenhower_classification" com valor correspondente?
-    """
     if importance == 1 and urgency == 1:
         
-        return {}
+        eisenhower = EisenhowerModel.query.filter_by(type="Do It First").first()
     
     elif importance == 1 and urgency == 2:
 
-        return {}
+        eisenhower = EisenhowerModel.query.filter_by(type="Delegate It").first()
 
     elif importance == 2 and urgency == 1:
 
-        return {}
+        eisenhower = EisenhowerModel.query.filter_by(type="Schedule It").first()
 
     elif importance == 2 and urgency == 2:
 
-        return {}
+        eisenhower = EisenhowerModel.query.filter_by(type="Delete It").first()
+
+    
+    tasks = TasksModel(eisenhower_id=eisenhower.id, **data)
+
+    session.add(tasks)
+    session.commit()
+
+    return {
+        "name": tasks.name,
+        "description": tasks.description,
+        "duration": tasks.duration,
+        "eisenhower_classification": eisenhower.type
+    }

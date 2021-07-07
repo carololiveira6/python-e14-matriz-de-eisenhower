@@ -1,7 +1,6 @@
 from app.models.eisenhowers_model import EisenhowerModel
 
-from flask import session
-
+from flask import current_app
 
 """
 Função que verifica se existe dados na tabela Eisenhower e a partir disso...
@@ -27,9 +26,11 @@ values...(....)
 
 def verify_eisenhower() -> None:
 
+    session = current_app.db.session
+    
     types = ["Do It First", "Delegate It", "Schedule It", "Delete It"]
 
-    if not EisenhowerModel.query.fetchall():
+    if not EisenhowerModel.query.all():
 
         insert_type = [EisenhowerModel(type=type) for type in types]
 
