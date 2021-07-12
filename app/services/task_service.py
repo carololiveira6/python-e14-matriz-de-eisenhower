@@ -1,4 +1,4 @@
-from flask import request, current_app, jsonify
+from flask import request, current_app
 
 from app.services.helper_service import verify_required_key, verify_missing_key, verify_value_option
 
