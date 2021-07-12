@@ -6,8 +6,11 @@ from sqlalchemy.orm import relationship
 from app.configs.database import db
 
 
-
+@dataclass
 class CategoriesModel(db.Model):
+
+    name: str
+    description: str
 
     __tablename__ = "categories"
 
