@@ -1,7 +1,6 @@
 from flask import Blueprint
 
-from app.exc import RequiredKeyError, MissingKeyError
-from app.exc.different_value import InvalidOptionError
+from app.exc import RequiredKeyError, MissingKeyError, InvalidOptionError
 from http import HTTPStatus
 
 from app.services.task_service import verify_values
